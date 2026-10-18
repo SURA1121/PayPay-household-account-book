@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>家計簿</title>
+<style>
+:root{--bg:#f4f5f7;--cd:#fff;--tx:#1c1c1e;--sb:#6b7280;--ac:#0a84ff;--ln:#e5e7eb;--ex:#e5484d;--in:#2f9e6b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e0e10;--cd:#1c1c1e;--tx:#f2f2f7;--sb:#9ca3af;--ln:#333;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0e0e10;--cd:#1c1c1e;--tx:#f2f2f7;--sb:#9ca3af;--ln:#333;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Hiragino Sans",sans-serif;padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+#v{padding:12px;max-width:640px;margin:auto}
+.c{background:var(--cd);border-radius:12px;padding:12px;margin-bottom:12px}
+h3{margin:0 0 8px;font-size:15px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.bar button{font-size:20px;width:44px}
+.r3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.r3 div{background:var(--cd);border-radius:12px;padding:8px;text-align:center;font-size:12px;color:var(--sb)}
+.r3 b{display:block;font-size:15px;color:var(--tx)}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px;min-height:40px}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border:0}button.d{color:var(--ex)}
+input,select,textarea{width:100%;margin-bottom:8px}input[type=checkbox]{width:auto;min-height:0;margin:0}
+.it{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--ln)}
+.it:last-child{border:0}.it small{color:var(--sb);display:block}
+.dh{font-size:12px;color:var(--sb);margin:10px 0 2px}
+.ex{color:var(--ex)}.in{color:var(--in)}
+.g{display:inline-block;font-size:11px;padding:0 6px;border-radius:9px;background:var(--bg);color:var(--sb);margin-left:4px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--cd);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;border-radius:0;background:none;font-size:11px;min-height:56px}nav .on{color:var(--ac);font-weight:700}
+#fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:26px;font-size:28px;padding:0;box-shadow:0 2px 8px #0004}
+#sh{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:9}
+#sh>div{background:var(--cd);width:100%;max-height:90%;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-width:640px;margin:auto}
+#to{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 14px;border-radius:20px;display:none;z-index:99;font-size:13px}
+.seg{display:flex;gap:4px;margin-bottom:8px}.seg button{flex:1}.seg .on{background:var(--ac);color:#fff}
+.lg{display:flex;align-items:center;gap:6px;font-size:13px;margin:3px 0}.lg i{width:10px;height:10px;border-radius:5px;flex:none}
+.bg{flex:1;height:6px;background:var(--bg);border-radius:3px}.bg b{display:block;height:6px;border-radius:3px}
+.dn{width:150px;height:150px;border-radius:50%;margin:8px auto;position:relative}.dn:after{content:"";position:absolute;inset:32px;background:var(--cd);border-radius:50%}
+pre{white-space:pre-wrap;font:inherit}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}.wd{text-align:center;font-size:11px;color:var(--sb)}.cc{min-height:48px;border-radius:6px;padding:2px;text-align:center;font-size:12px;cursor:pointer}.cc b{display:block;font-size:10px;line-height:1.2;word-break:break-all}.cc.hol span:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ex);margin-left:2px;vertical-align:super}.cc.sel{background:var(--bg);outline:2px solid var(--ac)}
+</style></head><body>
+<div id="v"></div><div id="to"></div>
+<button id="fab" class="p" onclick="openForm()">＋</button>
+<nav><button data-t="rec" onclick="go('rec')">📒<br>記録</button><button data-t="sum" onclick="go('sum')">📊<br>集計</button><button data-t="imp" onclick="go('imp')">📥<br>取込</button><button data-t="set" onclick="go('set')">⚙️<br>設定</button></nav>
+<div id="sh" onclick="if(event.target==this)cl()"><div id="shc"></div></div>
+<script>
+const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP'),EXC='対象外',COL=['#4c8bf5','#f5a623','#e5484d','#2f9e6b','#9b59b6','#16a5b8','#e67e22','#7f8c8d','#d6336c','#8d6e63','#5c7cfa','#94d82d'];
+const DEF={tx:[],applied:[],rec:[],genres:['食費','日用品','交通費','光熱費','通信費','住居','娯楽','衣服','医療','サブスク','その他','給与','その他収入',EXC],
+rules:[['セブン','食費'],['ローソン','食費'],['ファミリーマート','食費'],['マクドナルド','食費'],['スーパー','食費'],['イオン','日用品'],['ドラッグ','日用品'],['JR','交通費'],['Suica','交通費'],['タクシー','交通費'],['バス','交通費'],['電力','光熱費'],['ガス','光熱費'],['docomo','通信費'],['Netflix','サブスク'],['Spotify','サブスク'],['チャージ',EXC],['ユニクロ','衣服'],['給与','給与']]};
+let S,tab='rec',ym=new Date().toISOString().slice(0,7),sm='month',so=0,imp=null,skipDup=true,selD=null,hideAll=false,rulesOpen=true;
+try{S=JSON.parse(localStorage.getItem('kakeibo2'))}catch(_){}S=S||JSON.parse(JSON.stringify(DEF));
+const save=()=>{try{localStorage.setItem('kakeibo2',JSON.stringify(S))}catch(_){toast('保存できませんでした')}};
+const uid=()=>Math.random().toString(36).slice(2,10);
+function toast(m){const t=$('#to');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+const go=t=>{tab=t;$('#fab').style.display=t=='rec'?'':'none';render()};
+const cl=()=>$('#sh').style.display='none';
+const sheet=h=>{$('#shc').innerHTML=h;$('#sh').style.display='flex'};
+const p2=n=>String(n).padStart(2,'0'),d2s=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+const gc=g=>COL[Math.max(0,S.genres.indexOf(g))%COL.length];
+const opts=(sel)=>S.genres.map(g=>`<option ${g==sel?'selected':''}>${e(g)}</option>`).join('');
+function auto(s,type){for(const[k,g,t]of S.rules)if((!t||t=='both'||t==type)&&s.toLowerCase().includes(k.toLowerCase()))return g;return type=='in'?'その他収入':'その他'}
+/* ---------- 記録 ---------- */
+function vRec(){const[y,m]=ym.split('-').map(Number);
+const l=S.tx.filter(t=>t.date.startsWith(ym)).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+let i=0,x=0;l.forEach(t=>{if(t.genre==EXC)return;t.type=='in'?i+=t.amount:x+=t.amount});
+let h=`<div class=bar><button onclick="mv(-1)">‹</button><b onclick="pickM()" style="cursor:pointer;padding:8px">${y}年${m}月 ▾</b><button onclick="mv(1)">›</button></div><div class=r3><div>収入<b class=in>${yen(i)}</b></div><div>支出<b class=ex>${yen(x)}</b></div><div>収支<b>${yen(i-x)}</b></div></div>${cal(l)}<div class=c>`;
+let pd='';const sd=selD&&selD.startsWith(ym),L=sd?l.filter(t=>t.date==selD):(hideAll?[]:l);if(!sd)h+=`<div class=bar><span style="color:var(--sb);font-size:13px">${hideAll?'日付をタップすると内訳を表示':'月全体の一覧'}</span><button style="width:auto;font-size:13px" onclick="hideAll=!hideAll;render()">${hideAll?'月全体を表示':'月全体の表示をやめる'}</button></div>`;if(sd)h+=`<div class=bar><b>${selD} の内訳</b><button style="width:auto;font-size:13px" onclick="selD=null;hideAll=false;render()">月全体を表示</button></div>`;if(!L.length&&(sd||!hideAll))h+='<div style="color:var(--sb);text-align:center">記録がありません。右下の＋で追加できます</div>';
+L.forEach(t=>{if(t.date!=pd){pd=t.date;h+=`<div class=dh>${t.date}</div>`}
+h+=`<div class=it onclick="openForm('${t.id}')"><div>${e(t.name||'(名称なし)')}<span class=g style="color:${gc(t.genre)}">${e(t.genre)}</span>${t.memo&&t.memo!=t.name?`<small>${e(t.memo)}</small>`:''}</div><b class="${t.type=='in'?'in':'ex'}">${t.type=='in'?'+':'-'}${yen(t.amount)}</b></div>`});
+return h+'</div>'}
+function pickM(){const n=new Date(),has=new Set(S.tx.map(t=>t.date.slice(0,7)));let h='<h3>年月を選択（●は記録あり）</h3>';for(let i=3;i>=-47;i--){const d=new Date(n.getFullYear(),n.getMonth()+i,1),k=d.getFullYear()+'-'+p2(d.getMonth()+1);h+=`<button class="${k==ym?'p':''}" style="width:100%;margin-bottom:6px;text-align:left" onclick="ym='${k}';cl();render()">${d.getFullYear()}年${d.getMonth()+1}月${has.has(k)?' ●':''}</button>`}sheet(h+'<button style="width:100%" onclick="cl()">閉じる</button>')}
+function hBase(y,m,d){const k=y-1980,sp=Math.floor(20.8431+.242194*k-Math.floor(k/4)),au=Math.floor(23.2488+.242194*k-Math.floor(k/4)),nm=(mm,n)=>1+(8-new Date(y,mm-1,1).getDay())%7+7*(n-1);
+const L=[[1,1],[1,nm(1,2)],[2,11],[3,sp],[4,29],[5,3],[5,4],[5,5],[9,nm(9,3)],[9,au],[11,3],[11,23]];
+L.push(y==2020?[7,23]:y==2021?[7,22]:[7,nm(7,3)]);L.push(y==2020?[7,24]:y==2021?[7,23]:[10,nm(10,2)]);if(y>=2016)L.push(y==2020?[8,10]:y==2021?[8,8]:[8,11]);
+if(y>=2020)L.push([2,23]);if(y>=1989&&y<=2018)L.push([12,23]);if(y==2019)L.push([5,1],[10,22]);return L.some(x=>x[0]==m&&x[1]==d)}
+function isRed(y,m,d){const t=new Date(y,m-1,d),b=x=>hBase(x.getFullYear(),x.getMonth()+1,x.getDate());if(t.getDay()==0||b(t))return true;
+for(let k=1;k<9;k++){const p=new Date(y,m-1,d-k);if(!b(p))break;if(p.getDay()==0)return true}
+return b(new Date(y,m-1,d-1))&&b(new Date(y,m-1,d+1))}
+function cal(l){const[y,m]=ym.split('-').map(Number),f=new Date(y,m-1,1).getDay(),dim=new Date(y,m,0).getDate(),by={},has=new Set(l.map(t=>t.date));l.forEach(t=>{if(t.genre==EXC)return;by[t.date]=(by[t.date]||0)+(t.type=='in'?t.amount:-t.amount)});
+let h='<div class=c style="padding:6px"><div class=cal>'+'日月火水木金土'.split('').map(d=>`<div class="wd ${d=='日'?'ex':''}">${d}</div>`).join('');for(let i=0;i<f;i++)h+='<div></div>';
+for(let d=1;d<=dim;d++){const k=`${ym}-${p2(d)}`,v=by[k]||0;h+=`<div class="cc ${k==selD?'sel':''} ${isRed(y,m,d)?'hol':''}" onclick="selD='${k}';render()"><span>${d}</span>${has.has(k)?`<b class="${v>0?'in':v<0?'ex':''}">${v>0?'+':v<0?'−':''}${Math.abs(v).toLocaleString('ja-JP')}</b>`:''}</div>`}return h+'</div></div>'}
+function mv(n){const[y,m]=ym.split('-').map(Number),d=new Date(y,m-1+n,1);ym=d.getFullYear()+'-'+p2(d.getMonth()+1);render()}
+function openForm(id){const t=S.tx.find(t=>t.id==id)||{type:'out',date:selD||d2s(new Date()),genre:'食費',amount:'',name:'',memo:''};
+sheet(`<h3>${id?'編集':'手入力'}</h3><div class=seg><button id=ty0 class="${t.type=='out'?'on':''}" onclick="ty('out')">支出</button><button id=ty1 class="${t.type=='in'?'on':''}" onclick="ty('in')">収入</button></div>
+<input type=date id=f_d value="${t.date}"><input type=number inputmode=numeric id=f_a placeholder="金額" value="${t.amount}"><select id=f_g>${opts(t.genre)}</select><input id=f_n placeholder="内容（店名など）" value="${e(t.name)}"><input id=f_m placeholder="メモ" value="${e(t.memo==t.name?'':t.memo)}">
+<button class=p style="width:100%" onclick="sv('${id||''}')">保存</button>${id?`<button class=d style="width:100%;margin-top:8px" onclick="del('${id}')">削除</button>`:''}`);window._ty=t.type}
+function ty(v){window._ty=v;$('#ty0').className=v=='out'?'on':'';$('#ty1').className=v=='in'?'on':''}
+function sv(id){const a=parseInt($('#f_a').value);if(!a||a<=0||!$('#f_d').value)return toast('日付と金額を入力してください');
+let t=S.tx.find(t=>t.id==id);if(!t){t={id:uid()};S.tx.push(t)}
+Object.assign(t,{type:window._ty,date:$('#f_d').value,amount:a,genre:$('#f_g').value,name:$('#f_n').value.trim(),memo:$('#f_m').value.trim()});save();cl();render()}
+function del(id){ask('この記録を削除しますか？',()=>{S.tx=S.tx.filter(t=>t.id!=id);save();cl();render()})}
+function ask(m,f){window._cb=f;sheet(`<h3>${m}</h3><button class=d style="width:100%;margin-bottom:8px" onclick="cl();_cb()">削除する</button><button style="width:100%" onclick="cl()">キャンセル</button>`)}
+/* ---------- 集計 ---------- */
+function rng(o){const n=new Date();let a,b,l;
+if(sm=='week'){a=new Date(n.getFullYear(),n.getMonth(),n.getDate()-((n.getDay()+6)%7)+7*o);b=new Date(a.getFullYear(),a.getMonth(),a.getDate()+6);l=d2s(a)+' 〜 '+d2s(b)}
+else if(sm=='month'){a=new Date(n.getFullYear(),n.getMonth()+o,1);b=new Date(a.getFullYear(),a.getMonth()+1,0);l=a.getFullYear()+'年'+(a.getMonth()+1)+'月'}
+else{a=new Date(n.getFullYear()+o,0,1);b=new Date(a.getFullYear(),11,31);l=a.getFullYear()+'年'}
+return{a:d2s(a),b:d2s(b),l}}
+function sums(r){let i=0,x=0,ge={},gi={};S.tx.forEach(t=>{if(t.date<r.a||t.date>r.b||t.genre==EXC)return;if(t.type=='in'){i+=t.amount;gi[t.genre]=(gi[t.genre]||0)+t.amount}else{x+=t.amount;ge[t.genre]=(ge[t.genre]||0)+t.amount}});return{i,x,ge,gi}}
+function chart(o,tot){const a=Object.entries(o).sort((p,q)=>q[1]-p[1]);if(!a.length)return'<div style="color:var(--sb)">データなし</div>';let c=0,seg=a.map(([g,v])=>{const s=c;c+=v/tot*100;return`${gc(g)} ${s}% ${c}%`}).join(',');
+return`<div class=dn style="background:conic-gradient(${seg})"></div>`+a.map(([g,v])=>`<div class=lg><i style="background:${gc(g)}"></i><span style="width:5.5em">${e(g)}</span><span class=bg><b style="width:${v/tot*100}%;background:${gc(g)}"></b></span><span>${yen(v)}</span></div>`).join('')}
+function pickP(){const N={week:52,month:48,year:10}[sm];let h='<h3>期間を選択（●は記録あり）</h3>';for(let o=1;o>=-N;o--){const r=rng(o),s=sums(r);h+=`<button class="${o==so?'p':''}" style="width:100%;margin-bottom:6px;text-align:left" onclick="so=${o};cl();render()">${r.l}${s.i+s.x>0?' ●':''}</button>`}sheet(h+'<button style="width:100%" onclick="cl()">閉じる</button>')}
+function vSum(){const r=rng(so),p=rng(so-1),c=sums(r),q=sums(p),u={week:'週',month:'月',year:'年'}[sm];
+const df=(a,b)=>{const d=a-b;return`${d>=0?'+':'−'}${yen(Math.abs(d))}`+(b?`（${d>=0?'+':'−'}${Math.abs(Math.round(d/b*100))}%）`:'')};
+const days=Math.max(1,Math.round((new Date(r.b)-new Date(r.a))/864e5)+1),top=Object.entries(c.ge).sort((a,b)=>b[1]-a[1])[0];
+return`<div class=seg>${['week','month','year'].map(m=>`<button class="${sm==m?'on':''}" onclick="sm='${m}';so=0;render()">${{week:'週',month:'月',year:'年'}[m]}</button>`).join('')}</div>
+<div class=bar><button onclick="so--;render()">‹</button><b onclick="pickP()" style="cursor:pointer;padding:8px">${r.l} ▾</b><button onclick="so++;render()">›</button></div>
+<div class=r3><div>収入<b class=in>${yen(c.i)}</b></div><div>支出<b class=ex>${yen(c.x)}</b></div><div>収支<b>${yen(c.i-c.x)}</b></div></div>
+<div class=c><h3>支出（ジャンル別）</h3>${chart(c.ge,c.x)}</div><div class=c><h3>収入（ジャンル別）</h3>${chart(c.gi,c.i)}</div>
+<div class=c><h3>${u}の総括（前${u}比較）</h3><pre>支出 ${yen(c.x)}　前${u} ${yen(q.x)}　差 ${df(c.x,q.x)}
+収入 ${yen(c.i)}　前${u} ${yen(q.i)}　差 ${df(c.i,q.i)}
+収支 ${yen(c.i-c.x)}　前${u} ${yen(q.i-q.x)}
+1日あたり支出 ${yen(c.x/days)}
+${top?`最も多い支出：${top[0]}（${yen(top[1])}・支出の${Math.round(top[1]/c.x*100)}%）`:'支出の記録はありません'}</pre></div>`}
+/* ---------- 取込 ---------- */
+function csv(t){const r=[];let w=[],c='',q=0;t=t.replace(/^\uFEFF/,'');for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=0}else c+=h}else if(h=='"')q=1;else if(h==','){w.push(c);c=''}else if(h=='\n'||h=='\r'){if(h=='\r'&&t[i+1]=='\n')i++;w.push(c);r.push(w);w=[];c=''}else c+=h}if(c||w.length){w.push(c);r.push(w)}return r.filter(x=>x.length>1||x[0])}
+const key=t=>t.txid||t.id;
+function parseImp(text){const r=csv(text);if(r.length<2)return toast('データがありません');const h=r[0].map(x=>x.trim()),f=p=>h.findIndex(x=>x.startsWith(p));
+const C={d:f('取引日'),o:f('出金金額'),i:f('入金金額'),c:f('取引内容'),n:f('取引先'),id:f('取引番号'),g:f('ジャンル')};
+if(C.d<0||C.o<0)return toast('PayPay形式のCSVではありません');
+const ex=new Set(S.tx.map(key)),num=s=>parseInt(String(s||'').replace(/[^\d-]/g,''))||0,rows=[];
+r.slice(1).forEach(x=>{const m=(x[C.d]||'').match(/(\d{4})\D(\d{1,2})\D(\d{1,2})(?:\D+(\d{1,2}):(\d{2}))?/);if(!m)return;
+const o=num(x[C.o]),i=C.i>=0?num(x[C.i]):0;if(!o&&!i)return;const type=o>0?'out':'in',amount=o>0?o:i,date=`${m[1]}-${p2(m[2])}-${p2(m[3])}`,time=m[4]?p2(m[4])+':'+m[5]:'';
+const memo=(x[C.c]||'').trim(),name=(x[C.n]||'').trim()||memo;let g=C.g>=0?(x[C.g]||'').trim():'';if(!g)g=auto(name+' '+memo,type);
+const txid=(C.id>=0&&(x[C.id]||'').trim())||('x'+date+time+type+amount+name);rows.push({type,amount,date,time,name,memo,genre:g,ag:!(C.g>=0&&(x[C.g]||'').trim()),txid,dup:ex.has(txid),sel:!(ex.has(txid)&&skipDup)})});
+if(!rows.length)return toast('取り込める行がありません');imp=rows;render()}
+async function pick(el){const f=el.files[0];if(!f)return;const b=await f.arrayBuffer();let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(_){t=new TextDecoder('shift_jis').decode(b)}parseImp(t)}
+function rulesCard(){const hd=`<div class=bar style="margin:0"><h3 style="margin:0">自動振り分けリスト</h3><button style="width:auto;font-size:13px" onclick="rulesOpen=!rulesOpen;render()">${rulesOpen?'▲ 最小化':'▼ 開く'}</button></div>`;return`<div class=c>${hd}${rulesOpen?`<div style="color:var(--sb);font-size:12px">取引内容・取引先にキーワードが含まれると、そのジャンルになります（上から優先）。支出用・収入用・両方を選べます</div>${S.rules.map((r,i)=>`<div class=it onclick="editR(${i})" style="cursor:pointer"><span>${e(r[0])} → ${e(r[1])}<span class=g>${{out:'支出',in:'収入'}[r[2]]||'両方'}</span></span><a class=ex style="cursor:pointer;padding:4px" onclick="event.stopPropagation();S.rules.splice(${i},1);reRules();save();render()">削除</a></div>`).join('')}<div style="display:flex;gap:6px;margin-top:8px"><input id=rk placeholder="キーワード" style="margin:0"><select id=rg style="margin:0">${opts('')}</select><select id=rt style="margin:0;width:auto"><option value=out>支出</option><option value=in>収入</option><option value=both>両方</option></select></div><button style="margin-top:8px" onclick="addR()">ルール追加</button>`:''}</div>`}
+function vImp(){let h=`<div class=c><h3>CSVを取り込む</h3><input type=file accept=".csv,text/csv,text/plain" onchange="pick(this)"><textarea id=pt rows=3 placeholder="ファイルが選べない場合はCSVの中身をここに貼り付け"></textarea><button onclick="parseImp($('#pt').value)">貼り付けを読み込む</button></div>`;
+h+=rulesCard();
+if(imp){const n=imp.filter(r=>r.sel).length;h+=`<div class=c><h3>プレビュー（${imp.length}件／重複 ${imp.filter(r=>r.dup).length}件）</h3><button class=p style="width:100%;margin-bottom:10px" onclick="doImp()">${n}件を家計簿に記録</button><label><input type=checkbox ${skipDup?'checked':''} onchange="skipDup=this.checked;imp.forEach(r=>{if(r.dup)r.sel=!skipDup});render()"> 重複する項目をスキップ</label>`;
+imp.forEach((r,i)=>{h+=`<div class=it style="opacity:${r.sel?1:.45}"><input type=checkbox ${r.sel?'checked':''} onchange="imp[${i}].sel=this.checked;render()"><div style="flex:1">${r.date} ${e(r.name)}${r.dup?'<span class=g>重複</span>':''}<select style="margin:4px 0 0" onchange="imp[${i}].genre=this.value;imp[${i}].ag=false">${opts(r.genre).replace('</select>','')}${S.genres.includes(r.genre)?'':`<option selected>${e(r.genre)}</option>`}</select></div><b class="${r.type=='in'?'in':'ex'}">${r.type=='in'?'+':'-'}${yen(r.amount)}</b></div>`});
+h+=`<button class=p style="width:100%;margin-top:10px" onclick="doImp()">${n}件を家計簿に記録</button></div>`}
+return h}
+function doImp(){const a=imp.filter(r=>r.sel);a.forEach(r=>{if(!S.genres.includes(r.genre))S.genres.push(r.genre);const{dup,sel,ag,...t}=r;S.tx.push({id:uid(),...t})});save();toast(a.length+'件を記録しました');imp=null;ym=(a[0]?.date||ym).slice(0,7);go('rec')}
+/* ---------- 設定 ---------- */
+function vSet(){return`<div class=c><h3>ジャンル</h3>${S.genres.map((g,i)=>`<span class=g style="color:${gc(g)};font-size:13px;margin:2px">${e(g)} <a style="cursor:pointer;padding:4px" onclick="ask('このジャンルを削除しますか？（既存の記録は残ります）',()=>{S.genres.splice(${i},1);save();render()})">✕</a></span>`).join('')}<div style="display:flex;gap:6px;margin-top:8px"><input id=ng placeholder="新しいジャンル" style="margin:0"><button onclick="addG()">追加</button></div></div>
+<div class=c><h3>毎月の固定支出（サブスク等）</h3>${S.rec.map((r,i)=>`<div class=it><span>${e(r.name)}（毎月${r.day}日・${e(r.genre)}）</span><span>${yen(r.amount)} <a class=ex onclick="S.rec.splice(${i},1);save();render()">削除</a></span></div>`).join('')}
+<input id=c_n placeholder="名前"><input id=c_a type=number inputmode=numeric placeholder="金額"><input id=c_d type=number min=1 max=31 placeholder="日(1〜31)"><select id=c_g>${opts('サブスク')}</select><button onclick="addC()">登録</button>
+<hr style="border:0;border-top:1px solid var(--ln);margin:12px 0"><b>指定した月に自動入力</b><input type=month id=c_m value="${ym}" style="margin-top:6px"><button class=p onclick="applyC()">この月に入力</button><div style="color:var(--sb);font-size:12px;margin-top:4px">入力後の項目は記録画面から個別に削除できます。同じ月に再実行しても二重には入りません。</div></div>
+<div class=c><h3>データ</h3><button onclick="expo()">CSVエクスポート</button> <button onclick="manual()">使い方マニュアル</button> <button class=d onclick="delSheet()">期間を指定して削除</button> <button class=d onclick="ask('全データを消去しますか？',()=>{S=JSON.parse(JSON.stringify(DEF));save();render()})">全消去</button></div>`}
+function editR(i){const r=S.rules[i];sheet(`<h3>ルールを編集</h3><input id=e_k value="${e(r[0])}" placeholder="キーワード"><select id=e_g>${opts(r[1])}</select><select id=e_t><option value=out ${r[2]=='out'?'selected':''}>支出</option><option value=in ${r[2]=='in'?'selected':''}>収入</option><option value=both ${!r[2]||r[2]=='both'?'selected':''}>両方</option></select><button class=p style="width:100%;margin-bottom:8px" onclick="saveR(${i})">保存</button><button style="width:100%" onclick="cl()">キャンセル</button>`)}
+function saveR(i){const k=$('#e_k').value.trim();if(!k)return toast('キーワードを入力してください');S.rules[i]=[k,$('#e_g').value,$('#e_t').value];reRules();save();cl();render()}
+function delSheet(m){const dm=m||window._dm||'month';window._dm=dm;const old=sm;sm=dm;const N={week:52,month:48,year:10}[dm];let op='';for(let o=1;o>=-N;o--){const r=rng(o),c=S.tx.filter(t=>t.date>=r.a&&t.date<=r.b).length;op+=`<option value="${o}" ${o==0?'selected':''}>${r.l}（${c}件）</option>`}sm=old;
+sheet(`<h3>期間を指定して削除</h3><div class=seg>${[['week','週'],['month','月'],['year','年']].map(([k,n])=>`<button class="${dm==k?'on':''}" onclick="delSheet('${k}')">${n}</button>`).join('')}</div><select id=d_o>${op}</select><button class=d style="width:100%;margin-bottom:8px" onclick="delGo()">この期間の記録を削除</button><button style="width:100%" onclick="cl()">閉じる</button>`)}
+function delGo(){const o=+$('#d_o').value,old=sm;sm=window._dm;const r=rng(o);sm=old;const n=S.tx.filter(t=>t.date>=r.a&&t.date<=r.b).length;if(!n)return toast('該当する記録がありません');
+ask(`${r.l}の記録 ${n}件を削除しますか？`,()=>{S.tx=S.tx.filter(t=>!(t.date>=r.a&&t.date<=r.b));save();render();toast(n+'件削除しました')})}
+function addG(){const v=$('#ng').value.trim();if(v&&!S.genres.includes(v)){S.genres.push(v);save();render()}}
+function reRules(){if(imp)imp.forEach(r=>{if(r.ag)r.genre=auto(r.name+' '+r.memo,r.type)})}
+function addR(){const k=$('#rk').value.trim();if(k){S.rules.push([k,$('#rg').value,$('#rt').value]);reRules();save();render()}}
+function addC(){const n=$('#c_n').value.trim(),a=parseInt($('#c_a').value),d=parseInt($('#c_d').value);if(!n||!a||!(d>=1&&d<=31))return toast('名前・金額・日(1〜31)を入力');S.rec.push({id:uid(),name:n,amount:a,day:d,genre:$('#c_g').value});save();render()}
+function applyC(){const m=$('#c_m').value;if(!m)return;const[y,mo]=m.split('-').map(Number),dim=new Date(y,mo,0).getDate();let n=0;
+S.rec.forEach(r=>{const k=r.id+':'+m;if(S.applied.includes(k))return;S.applied.push(k);S.tx.push({id:uid(),type:'out',amount:r.amount,date:`${m}-${p2(Math.min(r.day,dim))}`,genre:r.genre,name:r.name,memo:'固定支出'});n++});save();toast(n+'件を入力しました')}
+/* ---------- エクスポート ---------- */
+function expo(){const H='取引日,出金金額（円）,入金金額（円）,海外出金金額,通貨,変換レート（円）,利用国,取引内容,取引先,取引方法,支払い区分,利用者,取引番号,ジャンル',q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+const L=[...S.tx].sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).map(t=>[q(t.date.replace(/-/g,'/')+' '+(t.time||'00:00')+':00'),t.type=='out'?t.amount:'-',t.type=='in'?t.amount:'-','-','-','-','-',q(t.memo||t.name),q(t.name),q('PAYPAY残高'),q('支払い'),q('-'),q(key(t)),q(t.genre)].join(','));
+const txt='\uFEFF'+H+'\n'+L.join('\n');window._csv=txt;
+sheet(`<h3>CSVエクスポート（${L.length}件）</h3><button class=p onclick="dl()">共有・保存</button> <button onclick="navigator.clipboard.writeText(window._csv).then(()=>toast('コピーしました'),()=>toast('下の欄から手動でコピーしてください'))">コピー</button><textarea rows=6 style="margin-top:8px" readonly onfocus="this.select()">${e(txt)}</textarea><div style="color:var(--sb);font-size:12px">保存できない場合はコピーしてメモ等に貼り付けてください（相手の取込画面の貼り付け欄で読み込めます）。</div>`)}
+async function dl(){const f=new File([window._csv],'kakeibo_'+d2s(new Date())+'.csv',{type:'text/csv'});
+try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(_){}
+try{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click()}catch(_){toast('コピーを使ってください')}}
+function manual(){sheet(`<h3>使い方</h3><pre><b>■ iPhoneで使う</b>
+SafariでこのページのURLを開き、共有ボタン →「ホーム画面に追加」。以後アプリのように起動できます。
+
+<b>■ PayPayのCSVを取り込む</b>
+1. PayPayアプリの取引履歴からCSVを出力し、「ファイル」アプリ等に保存。
+2.「取込」タブでファイルを選択（選べない場合は中身を貼り付け）。
+3. プレビューで、ジャンルの変更や不要行のチェック外しができます。
+4.「重複する項目をスキップ」をONにすると、記録済みの項目は自動で除外されます。
+5.「記録」を押すと、各取引の日付で家計簿に登録されます。
+※このアプリが出力したCSVも同じ手順で取り込めます。
+※「チャージ」は二重計上を避けるため「対象外」に振り分け、集計から除外します。
+
+<b>■ ジャンルの自動振り分け</b>
+「取込」タブの「自動振り分けリスト」にキーワードとジャンルを登録。取込時に取引内容・取引先を照合して自動で振り分けます。ジャンルも自由に追加できます。
+
+<b>■ 手入力</b>
+「記録」タブ右下の＋から、支出/収入・日付・金額・ジャンルを入力。項目をタップすると編集・削除できます。
+
+<b>■ 毎月の固定支出</b>
+「設定」で名前・金額・日(1〜31)を登録。月を指定して「この月に入力」で自動記録されます（31日指定は月末に調整）。
+
+<b>■ 集計</b>
+週・月・年を切り替え、‹ › で期間移動。ジャンル別グラフと、前の期間との比較つき総括を表示します。
+
+<b>■ 共有（複数人）</b>
+このアプリは端末内にデータを保存します。家族で共有するには、CSVエクスポート→相手が取込、で重複なしに合算できます。
+
+<b>■ データについて</b>
+データはこの端末のブラウザに保存され、再起動しても残ります。ただしSafariの設定やキャッシュ消去で消えることがあるため、定期的にCSVでバックアップしてください。</pre><button style="width:100%" onclick="cl()">閉じる</button>`)}
+function render(){$('#v').innerHTML=({rec:vRec,sum:vSum,imp:vImp,set:vSet})[tab]();document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab))}
+render();
+</script></body></html>
